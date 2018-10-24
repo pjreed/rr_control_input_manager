@@ -118,7 +118,7 @@ class CmdVelManager(object):
 
     def chase_cb(self, chase_cmd_vel):
         if (chase_cmd_vel.twist.linear.x, chase_cmd_vel.twist.angular.y, chase_cmd_vel.twist.angular.z) != (0,0,0):
-            self.last_auto_dock_command_time = rospy.Time.now()
+            self.last_chase_command_time = rospy.Time.now()
         self.chase_control_input_request = chase_cmd_vel
 
     def move_base_cb(self, move_base_cmd_vel):
