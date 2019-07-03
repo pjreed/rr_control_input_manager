@@ -30,9 +30,6 @@ last_y_button=time.time()
 last_joycb_device_check=time.time()
 button_msg = String()
 
-# Initialize driver node
-rospy.init_node('xbox_mapper_node', anonymous=True)
-
 # difference between xboxdrv USB driver and xpad.ko kernel module
 # 1) xboxdrv has only 11 indices
 # 2) U/D_PAD_BUTTON is the 7th axis
@@ -143,7 +140,7 @@ PREV_CMD_TIME = 0
 PREV_SEQ_NUM = 0
 
 MAX_VEL_FWD = rospy.get_param('~max_vel_drive', 2.6)
-MAX_VEL_TURN = rospy.get_param('~max_vel_turn', 7.0)
+MAX_VEL_TURN = rospy.get_param('~max_vel_turn', 9.0)
 MAX_VEL_FLIPPER = rospy.get_param('~max_vel_flipper', 1.4)
 DRIVE_THROTTLE = rospy.get_param('~default_drive_throttle', 0.15)
 FLIPPER_THROTTLE = rospy.get_param('~default_flipper_throttle', 0.6)
@@ -349,6 +346,10 @@ def joy_cb(Joy):
     
 # Main Function
 def joystick_main():
+
+    # Initialize driver node
+    rospy.init_node('xbox_mapper_node', anonymous=True)
+    rospy.loginfo('Initializing Node')
     r = rospy.Rate(10) # 10hz
     # publish the latched button initializations
     a_button_pub.publish(a_button_msg)
