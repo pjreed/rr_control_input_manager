@@ -22,6 +22,7 @@ class CmdVelManager(object):
     keyboard_control_input_request = Twist()
     move_base_control_input_request = Twist()
     auto_dock_control_input_request = TwistStamped()
+    chase_control_input_request = TwistStamped()
     fleet_manager_control_input_request = Twist()
     joy_control_input_request = TwistStamped()
     managed_control_input = TwistStamped()
@@ -34,6 +35,7 @@ class CmdVelManager(object):
         self.move_base_sub = rospy.Subscriber("/cmd_vel/move_base", Twist, self.move_base_cb)
         self.fleet_manager_sub = rospy.Subscriber("/cmd_vel/fleet_manager", Twist, self.fleet_manager_cb)
         self.auto_dock_sub = rospy.Subscriber("/cmd_vel/auto_dock", TwistStamped, self.auto_dock_cb)
+        self.chase_sub = rospy.Subscriber("/cmd_vel/chase", TwistStamped, self.chase_cb)
         self.soft_estop_enable_sub = rospy.Subscriber("/soft_estop/enable", Bool, self.soft_estop_enable_cb)
         self.soft_estop_reset_sub = rospy.Subscriber("/soft_estop/reset", Bool, self.soft_estop_reset_cb)
 
@@ -46,6 +48,7 @@ class CmdVelManager(object):
 
         self.last_move_base_command_time = rospy.Time.now()
         self.last_auto_dock_command_time = rospy.Time.now()
+        self.last_chase_command_time = rospy.Time.now()
         self.last_fleet_manager_command_time = rospy.Time.now()
         self.last_joy_command_time = rospy.Time.now()
         self.last_keyboard_command_time = rospy.Time.now()
@@ -66,6 +69,7 @@ class CmdVelManager(object):
         keyboard_time_elapsed = current_time - self.last_keyboard_command_time
         fleet_manager_time_elapsed = current_time - self.last_fleet_manager_command_time
         joy_time_elapsed = current_time - self.last_joy_command_time
+        chase_time_elapsed = current_time - self.last_chase_command_time
 
         if joy_time_elapsed.to_sec > 2:
             self.lock_release_cb()
@@ -73,6 +77,10 @@ class CmdVelManager(object):
 
         # Process non-human-local commands
         if not self.local_control_lock:
+            # chase requests (Priority 5)
+            if chase_time_elapsed.to_sec() < self.command_timeout:
+                my_managed_control_input = self.chase_control_input_request
+                my_managed_control_input.header.frame_id = 'chase'
             # move_base requests (Priority 4)
             if move_base_time_elapsed.to_sec() < self.command_timeout:
                 my_managed_control_input.twist = self.move_base_control_input_request
@@ -108,7 +116,11 @@ class CmdVelManager(object):
 
         self.seq += 1
 
-         
+    def chase_cb(self, chase_cmd_vel):
+        if (chase_cmd_vel.twist.linear.x, chase_cmd_vel.twist.angular.y, chase_cmd_vel.twist.angular.z) != (0,0,0):
+            self.last_chase_command_time = rospy.Time.now()
+        self.chase_control_input_request = chase_cmd_vel
+
     def move_base_cb(self, move_base_cmd_vel):
         if (move_base_cmd_vel.linear.x, move_base_cmd_vel.angular.y, move_base_cmd_vel.angular.z) != (0,0,0):
             self.last_move_base_command_time = rospy.Time.now()
@@ -116,12 +128,10 @@ class CmdVelManager(object):
             self.move_base_control_input_request.linear.y = move_base_cmd_vel.linear.y
             self.move_base_control_input_request.angular.z = move_base_cmd_vel.angular.z * 1.4 ##Fudge factor, remove when switched to closed loop control on rr_openrover_basic
 
-
     def auto_dock_cb(self, auto_dock_cmd_vel):
         if (auto_dock_cmd_vel.twist.linear.x, auto_dock_cmd_vel.twist.angular.y, auto_dock_cmd_vel.twist.angular.z) != (0,0,0):
             self.last_auto_dock_command_time = rospy.Time.now()
         self.auto_dock_control_input_request = auto_dock_cmd_vel
-
 
     def fleet_manager_cb(self, fleet_manager_cmd_vel):
         self.last_fleet_manager_command_time = rospy.Time.now()
@@ -142,7 +152,6 @@ class CmdVelManager(object):
             self.last_joy_command_time = joy_cmd_vel.header.stamp
             self.local_control_lock = True
         self.joy_control_input_request = joy_cmd_vel
-
 
     def soft_estop_enable_cb(self, data):
         if data.data == True:

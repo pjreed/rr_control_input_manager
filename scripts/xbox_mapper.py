@@ -148,9 +148,11 @@ MAX_VEL_FLIPPER = rospy.get_param('~max_vel_flipper', 1.4)
 DRIVE_THROTTLE = rospy.get_param('~default_drive_throttle', 0.15)
 FLIPPER_THROTTLE = rospy.get_param('~default_flipper_throttle', 0.6)
 ADJ_THROTTLE = rospy.get_param('~adjustable_throttle', True)
+LEFT_RIGHT_TRIM = rospy.get_param('left_right_trim', -0.05)
 DRIVE_INCREMENTS = float(20) 
 FLIPPER_INCREMENTS = float(20) 
 DEADBAND = 0.2
+
 FWD_ACC_LIM = 0.2 
 TRN_ACC_LIM = 0.4 
 DPAD_ACTIVE = False
@@ -312,13 +314,17 @@ def joy_cb(Joy):
 
     # Drive Forward/Backward commands
     drive_cmd = DRIVE_THROTTLE * MAX_VEL_FWD * Joy.axes[L_STICK_V_AXES] #left joystick
-    if drive_cmd < FWD_DEADBAND and -FWD_DEADBAND < drive_cmd:
-        drive_cmd = 0 
-        
     # Turn left/right commands
     turn_cmd = (1.1-(drive_cmd/MAX_VEL_FWD)) * DRIVE_THROTTLE * MAX_VEL_TURN * Joy.axes[R_STICK_H_AXES]  #right joystick
+
+
     if turn_cmd < TURN_DEADBAND and -TURN_DEADBAND < turn_cmd:
         turn_cmd = 0
+    if drive_cmd < FWD_DEADBAND and -FWD_DEADBAND < drive_cmd:
+        drive_cmd = 0 
+    else:
+        turn_cmd = turn_cmd + LEFT_RIGHT_TRIM
+    
 
     # Flipper up/down commands
     flipper_cmd = (FLIPPER_THROTTLE * MAX_VEL_FLIPPER * Joy.axes[L_TRIG_AXES]) - (FLIPPER_THROTTLE * MAX_VEL_FLIPPER * Joy.axes[R_TRIG_AXES])
