@@ -117,9 +117,9 @@ elif wired_or_wireless == "wireless" and driver =="xboxdrv":
     rospy.logwarn("XBOX CONFIG: wireless & xboxdrv")
     L_STICK_H_AXES = 0
     L_STICK_V_AXES = 1
-    L_TRIG_AXES = 5
-    R_STICK_H_AXES = 2 
-    R_STICK_V_AXES = 3
+    L_TRIG_AXES = 2
+    R_STICK_H_AXES = 3 
+    R_STICK_V_AXES = 4
     R_TRIG_AXES = 4
     DPAD_H_AXES = 6
     DPAD_V_AXES = 7
